@@ -1,13 +1,43 @@
 let uniqueID = 1;
 /* HOT MODULE SPECIFIC
- * Since hot reload blows away class instances, storage object is
+ * Since hot reload blows away class instances, the fallback copy is
  * moved outside of the class.
  */
-let memoryStorage = {};
+// Used only when localStorage throws (private mode, quota).
+const fallback = {};
+
+const load = (name) => {
+  let raw;
+  try {
+    raw = localStorage.getItem(name);
+  } catch {
+    raw = fallback[name];
+  }
+
+  try {
+    const data = JSON.parse(raw);
+    if (Array.isArray(data?.todos)) return data;
+  } catch {
+    // Corrupt data is discarded and overwritten on the next write.
+  }
+
+  return { todos: [] };
+};
+
+const persist = (name, data) => {
+  const json = JSON.stringify(data);
+  fallback[name] = json;
+
+  try {
+    localStorage.setItem(name, json);
+  } catch {
+    // The in-memory copy above keeps the page working.
+  }
+};
 
 /**
- * Creates a new client side storage object and will create an empty
- * collection if no collection already exists.
+ * Creates a new client side storage object backed by localStorage and will
+ * create an empty collection if no collection already exists.
  *
  * @param {string} name The name of our DB we want to use
  * @param {function} callback Our fake DB uses callbacks because in
@@ -17,17 +47,12 @@ export class Store {
   constructor(name, callback) {
     this._dbName = name;
 
-    if (!memoryStorage[name]) {
-      const data = {
-        todos: [],
-      };
+    const data = load(name);
+    for (const { id } of data.todos) uniqueID = Math.max(uniqueID, id + 1);
+    persist(name, data);
 
-      memoryStorage[name] = JSON.stringify(data);
-    }
-
-    if (callback) callback(JSON.parse(memoryStorage[name]));
+    if (callback) callback(data);
   }
-
   /**
    * Finds items based on a query given as a JS object
    *
@@ -44,7 +69,7 @@ export class Store {
   find(query, callback) {
     if (!callback) return;
 
-    const { todos } = JSON.parse(memoryStorage[this._dbName]);
+    const { todos } = load(this._dbName);
 
     callback(
       todos.filter((todo) => {
@@ -65,7 +90,7 @@ export class Store {
   findAll(callback) {
     if (!callback) return;
 
-    callback(JSON.parse(memoryStorage[this._dbName]).todos);
+    callback(load(this._dbName).todos);
   }
 
   /**
@@ -77,7 +102,7 @@ export class Store {
    * @param {number} id An optional param to enter an ID of an item to update
    */
   save(updateData, callback, id) {
-    const data = JSON.parse(memoryStorage[this._dbName]);
+    const data = load(this._dbName);
     const { todos } = data;
 
     // If an ID was actually given, find the item and update each property
@@ -90,15 +115,15 @@ export class Store {
         }
       }
 
-      memoryStorage[this._dbName] = JSON.stringify(data);
+      persist(this._dbName, data);
 
-      if (callback) callback(JSON.parse(memoryStorage[this._dbName]).todos);
+      if (callback) callback(load(this._dbName).todos);
     } else {
       // Generate an ID
       updateData.id = uniqueID++;
 
       todos.push(updateData);
-      memoryStorage[this._dbName] = JSON.stringify(data);
+      persist(this._dbName, data);
 
       if (callback) callback([updateData]);
     }
@@ -111,7 +136,7 @@ export class Store {
    * @param {function} callback The callback to fire after saving
    */
   remove(id, callback) {
-    const data = JSON.parse(memoryStorage[this._dbName]);
+    const data = load(this._dbName);
     const { todos } = data;
 
     for (let i = 0; i < todos.length; i++) {
@@ -121,9 +146,9 @@ export class Store {
       }
     }
 
-    memoryStorage[this._dbName] = JSON.stringify(data);
+    persist(this._dbName, data);
 
-    if (callback) callback(JSON.parse(memoryStorage[this._dbName]).todos);
+    if (callback) callback(load(this._dbName).todos);
   }
 
   /**
@@ -132,9 +157,9 @@ export class Store {
    * @param {function} callback The callback to fire after dropping the data
    */
   drop(callback) {
-    memoryStorage[this._dbName] = JSON.stringify({ todos: [] });
+    persist(this._dbName, { todos: [] });
 
-    if (callback) callback(JSON.parse(memoryStorage[this._dbName]).todos);
+    if (callback) callback(load(this._dbName).todos);
   }
 }
 

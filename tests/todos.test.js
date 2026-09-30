@@ -6,6 +6,8 @@ let store;
 let model;
 
 beforeEach(async () => {
+  localStorage.clear();
+  vi.restoreAllMocks();
   vi.resetModules();
   ({ default: Store } = await import("../src/store.js"));
   ({ default: Model } = await import("../src/model.js"));
@@ -69,5 +71,65 @@ describe("existing todo behavior", () => {
     expect(onRead).toHaveBeenCalledExactlyOnceWith([
       { id: expect.any(Number), title: "Keep me", completed: false },
     ]);
+  });
+});
+
+describe("persistence", () => {
+  // Re-importing the module resets uniqueID, which simulates a page reload.
+  const reload = async () => {
+    vi.resetModules();
+    ({ default: Store } = await import("../src/store.js"));
+    return new Store("test-todos");
+  };
+  const all = (s) => {
+    const cb = vi.fn();
+    s.findAll(cb);
+    return cb.mock.calls[0][0];
+  };
+
+  it("keeps title and completed state across a reload", async () => {
+    const cb = vi.fn();
+    store.save({ title: "Keep", completed: false }, cb);
+    store.save({ completed: true }, undefined, cb.mock.calls[0][0][0].id);
+    expect(all(await reload())).toEqual([
+      { id: expect.any(Number), title: "Keep", completed: true },
+    ]);
+  });
+
+  it("gives new todos ids above persisted ones after a reload", async () => {
+    store.save({ title: "Old", completed: false });
+    const [old] = all(store);
+    const fresh = await reload();
+    fresh.save({ title: "New", completed: false });
+    const ids = all(fresh).map((t) => t.id);
+    expect(new Set(ids).size).toBe(2);
+    expect(ids[1]).toBeGreaterThan(old.id);
+  });
+
+  it("persists remove and drop", async () => {
+    const cb = vi.fn();
+    store.save({ title: "Gone", completed: false }, cb);
+    store.save({ title: "Stays", completed: false });
+    store.remove(cb.mock.calls[0][0][0].id);
+    expect(all(await reload()).map((t) => t.title)).toEqual(["Stays"]);
+    (await reload()).drop();
+    expect(all(await reload())).toEqual([]);
+  });
+
+  it.each(["not json", "{}", "null"])("treats stored %s as empty", async (raw) => {
+    localStorage.setItem("test-todos", raw);
+    expect(all(await reload())).toEqual([]);
+  });
+
+  it("keeps working when localStorage throws", async () => {
+    vi.spyOn(Storage.prototype, "getItem").mockImplementation(() => {
+      throw new Error("denied");
+    });
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("denied");
+    });
+    const s = await reload();
+    s.save({ title: "Memory", completed: false });
+    expect(all(s)).toEqual([{ id: expect.any(Number), title: "Memory", completed: false }]);
   });
 });
