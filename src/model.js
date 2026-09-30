@@ -77,6 +77,16 @@ class Model {
   }
 
   /**
+   * Re-inserts removed models at their original positions
+   *
+   * @param {Array<{index: number, todo: object}>} entries The removed models
+   * @param {function} callback The callback to fire when the restore is complete.
+   */
+  restore(entries, callback) {
+    this.storage.restore(entries, callback);
+  }
+
+  /**
    * WARNING: Will remove ALL data from storage.
    *
    * @param {function} callback The callback to fire when the storage is wiped.

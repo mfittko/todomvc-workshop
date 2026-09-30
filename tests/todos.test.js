@@ -159,3 +159,48 @@ describe("persistence", () => {
     expect(all(s)).toEqual([{ id: expect.any(Number), title: "Memory", completed: false }]);
   });
 });
+
+describe("restore", () => {
+  const all = () => {
+    const cb = vi.fn();
+    store.findAll(cb);
+    return cb.mock.calls[0][0];
+  };
+
+  it("re-inserts todos at their original positions with their ids", () => {
+    for (const title of ["A", "B", "C"]) store.save({ title, completed: false });
+    const [a, b, c] = all();
+    store.remove(a.id);
+    store.remove(c.id);
+    store.restore([
+      { index: 0, todo: a },
+      { index: 2, todo: c },
+    ]);
+    expect(all()).toEqual([a, b, c]);
+  });
+
+  it("skips ids that already exist", () => {
+    store.save({ title: "A", completed: false });
+    const [a] = all();
+    store.restore([{ index: 0, todo: a }]);
+    expect(all()).toEqual([a]);
+  });
+
+  it("gives a new todo an id that differs from a restored id", () => {
+    const restored = { id: 1, title: "Old", completed: false };
+    store.restore([{ index: 0, todo: restored }]);
+    store.save({ title: "New", completed: false });
+    const [first, second] = all();
+    expect(first).toEqual(restored);
+    expect(second.id).not.toBe(restored.id);
+  });
+
+  it("keeps new ids above restored ids after a reload", async () => {
+    store.restore([{ index: 0, todo: { id: 41, title: "Old", completed: true } }]);
+    vi.resetModules();
+    ({ default: Store } = await import("../src/store.js"));
+    store = new Store("test-todos");
+    store.save({ title: "New", completed: false });
+    expect(all().map((t) => t.id)).toEqual([41, 42]);
+  });
+});

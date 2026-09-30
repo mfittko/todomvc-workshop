@@ -16,6 +16,10 @@ class Controller {
     this.view.bindCallback("itemToggle", (item) => this.toggleComplete(item.id, item.completed));
     this.view.bindCallback("removeCompleted", () => this.removeCompletedItems());
     this.view.bindCallback("toggleAll", (status) => this.toggleAll(status.completed));
+    this.view.bindCallback("undo", () => this.undo());
+
+    // Session-only; each entry is one delete: [{ index, todo }, ...].
+    this._undoStack = [];
   }
 
   /**
@@ -102,19 +106,59 @@ class Controller {
    * Then remove it from DOM & Storage
    */
   removeItem(id) {
-    this.model.remove(id, () => this.view.render("removeItem", id));
-    this._filter();
+    this._removeItems([id]);
   }
 
   /**
    * Will remove all completed items from the DOM and storage.
    */
   removeCompletedItems() {
-    this.model.read({ completed: true }, (data) => {
-      for (let item of data) this.removeItem(item.id);
+    this.model.read({ completed: true }, (data) => this._removeItems(data.map((item) => item.id)));
+  }
+
+  /**
+   * Restores the todos removed by the most recent delete.
+   */
+  undo() {
+    const entry = this._undoStack.pop();
+    if (!entry) return;
+
+    this.model.restore(entry, () => this._filter(true));
+    this._renderUndo();
+  }
+
+  /**
+   * Removes the given todos and records them, with their list positions,
+   * as one undo entry.
+   */
+  _removeItems(ids) {
+    if (ids.length === 0) return;
+
+    this.model.read((todos) => {
+      const entry = [];
+      todos.forEach((todo, index) => {
+        if (ids.includes(todo.id)) entry.push({ index, todo });
+      });
+      this._undoStack.push(entry);
     });
 
+    for (const id of ids) this.model.remove(id, () => this.view.render("removeItem", id));
+
     this._filter();
+    this._renderUndo();
+  }
+
+  /**
+   * Shows the newest undo entry, or hides the undo region when there is none.
+   */
+  _renderUndo() {
+    const entry = this._undoStack.at(-1);
+    let message = null;
+    if (entry)
+      message =
+        entry.length === 1 ? `Deleted "${entry[0].todo.title}"` : `Deleted ${entry.length} todos`;
+
+    this.view.render("undo", { message });
   }
 
   /**

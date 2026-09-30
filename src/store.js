@@ -170,6 +170,29 @@ export class Store {
   }
 
   /**
+   * Re-inserts removed items at their original positions, keeping their ids.
+   * Items whose id already exists are skipped.
+   *
+   * @param {Array<{index: number, todo: object}>} entries The removed items
+   * @param {function} callback The callback to fire after restoring
+   */
+  restore(entries, callback) {
+    const data = load(this._dbName);
+    const { todos } = data;
+
+    for (const { index, todo } of [...entries].sort((a, b) => a.index - b.index)) {
+      if (todos.some((t) => t.id === todo.id)) continue;
+
+      todos.splice(Math.min(index, todos.length), 0, todo);
+      uniqueID = Math.max(uniqueID, todo.id + 1);
+    }
+
+    persist(this._dbName, data);
+
+    if (callback) callback(load(this._dbName).todos);
+  }
+
+  /**
    * Will drop all storage and start fresh
    *
    * @param {function} callback The callback to fire after dropping the data

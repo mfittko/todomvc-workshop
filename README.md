@@ -4,6 +4,10 @@ A small, plain JavaScript app for practicing how to investigate code, write a sh
 
 The starter can add, edit, complete, filter, and delete todos. **Data lives in browser memory and disappears on reload.** There is no application backend in this starter.
 
+## Undo
+
+Deletes can be undone: the `x` button, clearing an edit to an empty title, and "Clear completed" (one step for all cleared todos). Press the Undo button below the list, or press `Ctrl+Z` / `Cmd+Z` while focus is outside a text input. Undo restores the newest delete first, with its original title, completed state, and position. The undo stack is session-only and a reload clears it. There is no redo.
+
 ## Setup
 
 You need Node.js **26.10.0** (or a newer 26.x release), Git, and a coding assistant you are signed into. Use a GitHub account for your fork and PR.
@@ -21,14 +25,15 @@ Before the workshop, add a todo, confirm it disappears on reload, and run `npm r
 
 ## Commands
 
-| Command          | Purpose                                          |
-|------------------|--------------------------------------------------|
-| `npm run dev`    | Start Vite+ on port 5173.                        |
-| `npm test`       | Run the baseline tests.                          |
-| `npm run verify` | Check formatting and lint, run tests, and build. |
-| `npm run format` | Format files.                                    |
+| Command            | Purpose                                          |
+|--------------------|--------------------------------------------------|
+| `npm run dev`      | Start Vite+ on port 5173.                        |
+| `npm test`         | Run the baseline tests.                          |
+| `npm run verify`   | Check formatting and lint, run tests, and build. |
+| `npm run format`   | Format files.                                    |
+| `npm run test:e2e` | Run the Playwright end-to-end tests in Chromium. |
 
-Use npm and keep `package-lock.json`. If port 5173 is busy, run `npm run dev -- --port 5174`. The upstream CSS may print a non-blocking placeholder-selector warning during builds.
+Run `npx playwright install chromium` once before the first `npm run test:e2e`. Use npm and keep `package-lock.json`. If port 5173 is busy, run `npm run dev -- --port 5174`. The upstream CSS may print a non-blocking placeholder-selector warning during builds.
 
 ## Code map
 
@@ -38,6 +43,7 @@ Use npm and keep `package-lock.json`. If port 5173 is busy, run `npm run dev -- 
 - `src/store.js`: in-memory storage.
 - `src/view.js`, `src/template.js`, `src/helpers.js`: DOM, markup, and events.
 - `tests/todos.test.js`: baseline behavior checks.
+- `e2e/`: Playwright end-to-end tests.
 
 ## Agent skills
 
