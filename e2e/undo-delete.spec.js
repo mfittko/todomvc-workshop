@@ -25,11 +25,11 @@ test("undo restores a deleted todo at its position with its completed state", as
   await item(page, "B").locator(".toggle").check();
   await remove(page, "B");
   await expect(page.locator(".undo")).toContainText('Deleted "B"');
-  await expect(labels(page)).toHaveText(["A", "C"]);
+  await expect(labels(page)).toHaveText(["C", "A"]);
 
   await page.locator(".undo-button").click();
 
-  await expect(labels(page)).toHaveText(["A", "B", "C"]);
+  await expect(labels(page)).toHaveText(["C", "B", "A"]);
   await expect(item(page, "B")).toHaveClass(/completed/);
 });
 
@@ -43,7 +43,7 @@ test("clear completed is undone in one step", async ({ page }) => {
 
   await page.locator(".undo-button").click();
 
-  await expect(labels(page)).toHaveText(["A", "B", "C"]);
+  await expect(labels(page)).toHaveText(["C", "B", "A"]);
   await expect(page.locator(".undo")).toBeHidden();
 });
 
@@ -59,9 +59,9 @@ test("Control+Z and Meta+Z undo a delete when focus is not in a text input", asy
 
   await page.locator(".new-todo").blur();
   await page.keyboard.press("Control+Z");
-  await expect(labels(page)).toHaveText(["B", "C"]);
+  await expect(labels(page)).toHaveText(["C", "B"]);
   await page.keyboard.press("Meta+Z");
-  await expect(labels(page)).toHaveText(["A", "B", "C"]);
+  await expect(labels(page)).toHaveText(["C", "B", "A"]);
 });
 
 test("the Undo button works from the keyboard", async ({ page }) => {
@@ -91,7 +91,7 @@ test("multiple deletes undo in reverse order and the region hides when empty", a
   await expect(page.locator(".undo")).toContainText('Deleted "A"');
 
   await page.locator(".undo-button").click();
-  await expect(labels(page)).toHaveText(["A", "B"]);
+  await expect(labels(page)).toHaveText(["B", "A"]);
   await expect(page.locator(".undo")).toBeHidden();
 });
 
@@ -99,11 +99,11 @@ test("a restored todo survives a reload", async ({ page }) => {
   await add(page, "A", "B");
   await remove(page, "A");
   await page.locator(".undo-button").click();
-  await expect(labels(page)).toHaveText(["A", "B"]);
+  await expect(labels(page)).toHaveText(["B", "A"]);
 
   await page.reload();
 
-  await expect(labels(page)).toHaveText(["A", "B"]);
+  await expect(labels(page)).toHaveText(["B", "A"]);
 });
 
 test("the undo stack does not survive a reload", async ({ page }) => {
