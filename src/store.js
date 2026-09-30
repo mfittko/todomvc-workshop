@@ -6,17 +6,25 @@ let uniqueID = 1;
 // Used only when localStorage throws (private mode, quota).
 const fallback = {};
 
+// Names whose last localStorage write failed; localStorage is stale for them.
+const degraded = new Set();
+
+const isTodo = (t) =>
+  Number.isInteger(t?.id) && typeof t.title === "string" && typeof t.completed === "boolean";
+
 const load = (name) => {
-  let raw;
-  try {
-    raw = localStorage.getItem(name);
-  } catch {
-    raw = fallback[name];
+  let raw = fallback[name];
+  if (!degraded.has(name)) {
+    try {
+      raw = localStorage.getItem(name);
+    } catch {
+      // raw stays the in-memory copy.
+    }
   }
 
   try {
     const data = JSON.parse(raw);
-    if (Array.isArray(data?.todos)) return data;
+    if (Array.isArray(data?.todos) && data.todos.every(isTodo)) return data;
   } catch {
     // Corrupt data is discarded and overwritten on the next write.
   }
@@ -30,7 +38,9 @@ const persist = (name, data) => {
 
   try {
     localStorage.setItem(name, json);
+    degraded.delete(name);
   } catch {
+    degraded.add(name);
     // The in-memory copy above keeps the page working.
   }
 };
@@ -53,6 +63,7 @@ export class Store {
 
     if (callback) callback(data);
   }
+
   /**
    * Finds items based on a query given as a JS object
    *

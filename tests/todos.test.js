@@ -116,9 +116,32 @@ describe("persistence", () => {
     expect(all(await reload())).toEqual([]);
   });
 
-  it.each(["not json", "{}", "null"])("treats stored %s as empty", async (raw) => {
+  it.each([
+    "not json",
+    "{}",
+    "null",
+    '{"todos":"x"}',
+    '{"todos":[null]}',
+    '{"todos":[{}]}',
+    '{"todos":[{"id":"5","title":"t","completed":false}]}',
+    '{"todos":[{"id":5,"title":7,"completed":false}]}',
+  ])("treats stored %s as empty", async (raw) => {
     localStorage.setItem("test-todos", raw);
     expect(all(await reload())).toEqual([]);
+  });
+
+  it("keeps later writes visible when only setItem throws", async () => {
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("quota");
+    });
+    const s = await reload();
+    const cb = vi.fn();
+    s.save({ title: "A", completed: false }, cb);
+    s.save({ title: "B", completed: false });
+    s.remove(cb.mock.calls[0][0][0].id);
+    expect(all(s).map((t) => t.title)).toEqual(["B"]);
+    s.drop();
+    expect(all(s)).toEqual([]);
   });
 
   it("keeps working when localStorage throws", async () => {
