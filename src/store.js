@@ -10,10 +10,11 @@ const fallback = {};
 const degraded = new Set();
 
 // Safe positive ids only: save/update treats id 0 as "no id", and ids at or
-// above 2^53 break the id + 1 seed in the constructor.
+// above 2^53 - 1 break the id + 1 seed in the constructor.
 const isTodo = (t) =>
   Number.isSafeInteger(t?.id) &&
   t.id > 0 &&
+  t.id < Number.MAX_SAFE_INTEGER &&
   typeof t.title === "string" &&
   typeof t.completed === "boolean";
 

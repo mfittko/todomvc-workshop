@@ -8,7 +8,7 @@ Primary user: a person using the todo app in one browser profile. Todos live in 
 
 1. In `src/store.js`, read and write the serialized `{ todos: [] }` document through `localStorage`, keyed by the store name (`"workshop-todos"` in the app).
 2. Seed `uniqueID` from the highest stored id plus one when a `Store` is constructed. Today `uniqueID` restarts at 1 on every page load and would collide with persisted todos.
-3. If the stored value is missing, is not valid JSON, has no `todos` array, or has any entry that is not a todo, start with `{ todos: [] }`. A todo has a safe positive integer `id`, a string `title`, and a boolean `completed`. One bad entry discards the whole list. The `Store` constructor writes the empty list back right away, so corrupt data is replaced when the page loads. This is accepted data loss for a workshop app.
+3. If the stored value is missing, is not valid JSON, has no `todos` array, or has any entry that is not a todo, start with `{ todos: [] }`. A todo has a positive integer `id` below 2^53 - 1, a string `title`, and a boolean `completed`. One bad entry discards the whole list. The `Store` constructor writes the empty list back right away, so corrupt data is replaced when the page loads. This is accepted data loss for a workshop app.
 4. If `localStorage` throws on read or write (for example private mode or quota), keep working from an in-memory copy for that page load.
 5. Tests run under jsdom (`vite.config.js`), which provides `localStorage`. Tests use it directly. The `Store` constructor signature does not change. Each test clears `localStorage` in `beforeEach`. `vi.resetModules()` in the existing `beforeEach` resets `uniqueID`, which simulates a page reload.
 
