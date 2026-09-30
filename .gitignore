@@ -12,4 +12,6 @@ prep/
 meta/
 CONTINUITY.md
 decisions.tsv
-.audit/
+.audit
+test-results/
+playwright-report/
