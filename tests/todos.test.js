@@ -125,6 +125,8 @@ describe("persistence", () => {
     '{"todos":[{}]}',
     '{"todos":[{"id":"5","title":"t","completed":false}]}',
     '{"todos":[{"id":5,"title":7,"completed":false}]}',
+    '{"todos":[{"id":9007199254740993,"title":"t","completed":false}]}',
+    '{"todos":[{"id":0,"title":"t","completed":false}]}',
   ])("treats stored %s as empty", async (raw) => {
     localStorage.setItem("test-todos", raw);
     expect(all(await reload())).toEqual([]);

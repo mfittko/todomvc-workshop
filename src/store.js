@@ -9,8 +9,13 @@ const fallback = {};
 // Names whose last localStorage write failed; localStorage is stale for them.
 const degraded = new Set();
 
+// Safe positive ids only: save/update treats id 0 as "no id", and ids at or
+// above 2^53 break the id + 1 seed in the constructor.
 const isTodo = (t) =>
-  Number.isInteger(t?.id) && typeof t.title === "string" && typeof t.completed === "boolean";
+  Number.isSafeInteger(t?.id) &&
+  t.id > 0 &&
+  typeof t.title === "string" &&
+  typeof t.completed === "boolean";
 
 const load = (name) => {
   let raw = fallback[name];
@@ -24,9 +29,10 @@ const load = (name) => {
 
   try {
     const data = JSON.parse(raw);
+    // One wrongly shaped entry discards the whole list.
     if (Array.isArray(data?.todos) && data.todos.every(isTodo)) return data;
   } catch {
-    // Corrupt data is discarded and overwritten on the next write.
+    // Corrupt data falls through to the empty list; the Store constructor persists it.
   }
 
   return { todos: [] };
