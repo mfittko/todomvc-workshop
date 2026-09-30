@@ -5,6 +5,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="A plain JavaScript TodoMVC app for our AI coding workshop." />
     <title>TodoMVC · AI Coding Workshop</title>
+    <style>
+      .undo:not([hidden]) {
+        /* The footer's stacked-paper shadow would otherwise cover this region. */
+        position: relative;
+        z-index: 1;
+        background: #fff;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px 15px;
+        border-top: 1px solid #e6e6e6;
+      }
+      .undo-button {
+        padding: 3px 7px;
+        border: 1px solid #b83f45;
+        border-radius: 3px;
+        color: #b83f45;
+        cursor: pointer;
+      }
+      .undo-button:focus-visible {
+        outline: 2px solid #b83f45;
+      }
+    </style>
   </head>
   <body>
     <section class="todoapp">
@@ -33,6 +56,10 @@
         </ul>
         <button class="clear-completed">Clear completed</button>
       </footer>
+      <div class="undo" role="status" aria-live="polite" hidden>
+        <span class="undo-message"></span>
+        <button class="undo-button" type="button">Undo</button>
+      </div>
     </section>
     <footer class="info">
       <p>Double-click to edit a todo</p>

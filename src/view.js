@@ -82,6 +82,9 @@ export default class View {
     this.$toggleAllInput = qs(".toggle-all");
     this.$toggleAll = qs(".toggle-all-label");
     this.$newTodo = qs(".new-todo");
+    this.$undo = qs(".undo");
+    this.$undoMessage = qs(".undo-message");
+    this.$undoButton = qs(".undo-button");
 
     this.render = this.render.bind(this);
     this.bindCallback = this.bindCallback.bind(this);
@@ -127,6 +130,10 @@ export default class View {
       case "editItemDone":
         _editItemDone(parameter.id, parameter.title);
         break;
+      case "undo":
+        this.$undo.hidden = !parameter.message;
+        this.$undoMessage.textContent = parameter.message || "";
+        break;
       case "clearCompletedButton":
         this._clearCompletedButton(
           parameter.completed,
@@ -146,6 +153,18 @@ export default class View {
         break;
       case "removeCompleted":
         $on(this.$clearCompleted, "click", handler);
+        break;
+      case "undo":
+        $on(this.$undoButton, "click", handler);
+        $on(document, "keydown", (e) => {
+          if (!(e.ctrlKey || e.metaKey) || e.shiftKey || e.altKey || e.key.toLowerCase() !== "z")
+            return;
+          // Text inputs (.new-todo, .edit) keep their native text undo.
+          if (e.target.matches?.("input:not([type]), input[type=text], textarea")) return;
+
+          e.preventDefault();
+          handler();
+        });
         break;
       case "toggleAll":
         $on(this.$toggleAll, "click", () => {
